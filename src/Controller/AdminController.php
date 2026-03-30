@@ -2,72 +2,89 @@
 
 namespace App\Controller;
 
-use App\Entity\Choix;
-use App\Entity\Questions;
-use App\Entity\Sondages;
 use App\Repository\AdminRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class AdminController extends AbstractController
 {
-    #[Route('/api/admin/sondage', name: 'admin_sondage_create', methods: ['POST', 'OPTIONS'])]
-    public function create(
-        Request $request,
-        EntityManagerInterface $em,
-        AdminRepository $adminRepo
-    ): Response {
+    public function __construct(
+        private AdminRepository $adminRepo,
+        private UserRepository $userRepo,
+        private EntityManagerInterface $em
+    ) {}
 
+    /**
+     * Méthode privée pour vérifier si la requête provient bien d'un Admin valide
+     */
+    private function getAuthenticatedAdmin(Request $request)
+    {
         $token = $request->headers->get('Authorization');
-
-        if (!$token) {
-            return $this->json(["status" => "error", "message" => "token not found"], 401);
-        }
+        if (!$token) return null;
 
         $token = str_replace('Bearer ', '', $token);
+        $admin = $this->adminRepo->findOneBy(['token' => $token]);
 
-        $admin = $adminRepo->findOneBy(['token' => $token]);
+        if ($admin && $admin->getRole() === 'ROLE_ADMIN') {
+            return $admin;
+        }
 
-        if (!$admin || $admin->getRole() !== 'ROLE_ADMIN') {
-            return $this->json([
-                'error' => 'accès refusé, tu dois être admin'
-            ], 403);
+        return null;
+    }
+
+    #[Route('/admin/profile', name: 'app_admin_update_profile', methods: ['PUT', 'OPTIONS'])]
+    public function updateProfile(Request $request): Response
+    {
+        $admin = $this->getAuthenticatedAdmin($request);
+        if (!$admin) {
+            return $this->json(["status" => "error", "message" => "Accès non autorisé."],);
         }
 
         $data = json_decode($request->getContent(), true);
-
         if (!$data) {
-            return $this->json(["status" => "error", "message" => "données JSON invalides"], 400);
+            return $this->json(["status" => "error", "message" => "Données invalides."],);
         }
 
-        $sondage = new Sondages();
-        $sondage->setName($data['name']);
-        $sondage->setIsActive($data['visible'] ?? false);
-
-        $question = new Questions();
-        $question->setLabel($data['question_label']);
-        $question->setMultiple(false);
-        $question->setSondage($sondage);
-
-        if (isset($data['choices']) && is_array($data['choices'])) {
-            foreach ($data['choices'] as $choiceLabel) {
-                $choix = new Choix();
-                $choix->setLabel($choiceLabel);
-                $choix->setQuestions($question);
-                $em->persist($choix);
-            }
+        if (isset($data['nom'])) {
+            $admin->setNom($data['nom']);
+        }
+        if (isset($data['photoProfil'])) {
+            $admin->setPhotoProfil($data['photoProfil']);
         }
 
-        $em->persist($sondage);
-        $em->persist($question);
-        $em->flush();
+        $this->em->persist($admin);
+        $this->em->flush();
 
         return $this->json([
-            'status' => 'Sondage QCM créé !',
-            'admin' => $admin->getNom()
-        ], 201);
+            "status" => "ok",
+            "message" => "Profil administrateur mis à jour.",
+            "result" => ["nom" => $admin->getNom(), "photoProfil" => $admin->getPhotoProfil()]
+        ],);
+    }
+
+    #[Route('/admin/user/{id}', name: 'app_admin_delete_user', methods: ['DELETE', 'OPTIONS'])]
+    public function deleteUser(Request $request, int $id): Response
+    {
+        $admin = $this->getAuthenticatedAdmin($request);
+        if (!$admin) {
+            return $this->json(["status" => "error", "message" => "Accès non autorisé."],);
+        }
+
+        $userToDelete = $this->userRepo->find($id);
+
+        if (!$userToDelete) {
+            return $this->json(["status" => "error", "message" => "Utilisateur introuvable."],);
+        }
+
+        $this->em->remove($userToDelete);
+        $this->em->flush();
+
+        return $this->json([
+            "status" => "ok",
+            "message" => "L'utilisateur a été supprimé avec succès." ],);
     }
 }
