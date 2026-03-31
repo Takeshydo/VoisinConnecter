@@ -31,19 +31,18 @@ final class AdminController extends AbstractController
 
         if ($admin && $admin->getRole() === 'ROLE_ADMIN') {
 
-            // AJOUT : Vérification de l'expiration du token (Exemple : validité de 24 heures)
             $tokenDate = $admin->getTokenCreatedAt();
 
             if (!$tokenDate) {
-                return null; // Si pas de date, le token est considéré comme invalide par précaution
+                return null;
             }
 
             $now = new \DateTime();
             $interval = $now->diff($tokenDate);
             $hours = $interval->h + ($interval->days * 24);
 
-            if ($hours >= 2) { // Limite fixée à 24h (tu peux changer cette valeur)
-                return null; // Token expiré
+            if ($hours >= 2) {
+                return null;
             }
 
             return $admin;
@@ -68,6 +67,10 @@ final class AdminController extends AbstractController
         if (isset($data['nom'])) {
             $admin->setNom($data['nom']);
         }
+
+        if (isset($data['prenom'])) {
+            $admin->setPrenom($data['prenom']);
+        }
         if (isset($data['photoProfil'])) {
             $admin->setPhotoProfil($data['photoProfil']);
         }
@@ -78,7 +81,11 @@ final class AdminController extends AbstractController
         return $this->json([
             "status" => "ok",
             "message" => "Profil administrateur mis à jour.",
-            "result" => ["nom" => $admin->getNom(), "photoProfil" => $admin->getPhotoProfil()]
+            "result" => [
+                "nom" => $admin->getNom(),
+                "prenom" => $admin->getPrenom(),
+                "photoProfil" => $admin->getPhotoProfil()
+            ]
         ]);
     }
 

@@ -38,6 +38,9 @@ class User
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $tokenCreatedAt = null;
 
+    #[ORM\Column(length: 255)]
+    private ?string $prenom = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -142,6 +145,18 @@ class User
     public function setTokenCreatedAt(?\DateTimeImmutable $tokenCreatedAt): static
     {
         $this->tokenCreatedAt = $tokenCreatedAt;
+
+        return $this;
+    }
+
+    public function getPrenom(): ?string
+    {
+        return $this->prenom;
+    }
+
+    public function setPrenom(string $prenom): static
+    {
+        $this->prenom = $prenom;
 
         return $this;
     }

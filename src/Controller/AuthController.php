@@ -28,7 +28,7 @@ final class AuthController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        if (empty($data['nom']) || empty($data['email']) || empty($data['password'])) {
+        if (empty($data['nom']) || empty($data['prenom']) || empty($data['email']) || empty($data['password'])) {
             return $this->json(["status" => "error", "message" => "Données incomplètes."]);
         }
 
@@ -40,6 +40,7 @@ final class AuthController extends AbstractController
         $salt = $this->getSalt();
 
         $user->setNom($data['nom']);
+        $user->setPrenom($data['prenom']);
         $user->setEmail($data['email']);
 
         // Hachage du mot de passe
@@ -50,7 +51,6 @@ final class AuthController extends AbstractController
         $tokenRaw = $data['email'] . $hashedPassword . uniqid('token_', true);
         $user->setToken(hash('sha256', $tokenRaw));
 
-        // AJOUT : Date de création du token
         $user->setTokenCreatedAt(new \DateTimeImmutable());
 
         $user->setRole('ROLE_USER');
@@ -63,7 +63,7 @@ final class AuthController extends AbstractController
         return $this->json([
             "status" => "ok",
             "message" => "Compte créé !",
-            "result" => ["nom" => $user->getNom(), "token" => $user->getToken()]
+            "result" => ["nom" => $user->getNom(), "prenom" => $user->getPrenom(), "token" => $user->getToken()]
         ]);
     }
 
@@ -83,7 +83,7 @@ final class AuthController extends AbstractController
 
         if ($account && $account->getPassword() === $hashedPassword) {
 
-            // AJOUT : Régénération du token à chaque connexion pour prolonger la session
+            // Régénération du token à chaque connexion pour prolonger la session
             $newTokenRaw = $account->getEmail() . $hashedPassword . uniqid('token_', true);
             $account->setToken(hash('sha256', $newTokenRaw));
             $account->setTokenCreatedAt(new \DateTimeImmutable());
@@ -96,8 +96,10 @@ final class AuthController extends AbstractController
                 "status" => "ok",
                 "message" => "Connecté !",
                 "token" => $account->getToken(),
-                "role" => $account->getRole()
-            ], );
+                "role" => $account->getRole(),
+                "nom" => $account->getNom(),
+                "prenom" => $account->getPrenom()
+            ]);
         }
 
         return $this->json(["status" => "error", "message" => "Identifiants invalides."]);
