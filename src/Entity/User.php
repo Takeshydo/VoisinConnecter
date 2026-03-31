@@ -61,6 +61,9 @@ class User
     #[Groups(['user:info'])]
     private Collection $annonces;
 
+    #[ORM\Column(type: Types::SIMPLE_ARRAY)]
+    private array $role = [];
+
     public function __construct()
     {
         $this->annonces = new ArrayCollection();

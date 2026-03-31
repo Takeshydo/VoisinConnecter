@@ -53,7 +53,7 @@ final class AuthController extends AbstractController
 
         $user->setTokenCreatedAt(new \DateTimeImmutable());
 
-        $user->setRole('ROLE_USER');
+        $user->setRole(['ROLE_USER']);
         $user->setCreatedAt(new \DateTime());
         $user->setPhotoProfil('');
 

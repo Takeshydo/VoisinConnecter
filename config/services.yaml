@@ -11,7 +11,10 @@ parameters:
     app.app_env: '%env(APP_ENV)%'
     app.password_salt: '%env(PASSWORD_SALT)%'
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2fb75605e3fb19a03814981eb901f9511d7335f5
 services:
     # default configuration for services in *this* file
     _defaults:

@@ -48,7 +48,7 @@ final class AnnonceController extends AbstractController
         }
     }
 
-    #[Route('/api/annonce/{category}', name: 'app_annonce_category', methods: ['GET'])]
+    #[Route('/annonce/{category}', name: 'app_annonce_category', methods: ['GET'])]
     public function getAnnonceByCategory(string $category): Response{
         $annonce = $this->annonceRepo->findAll();
 
@@ -89,7 +89,7 @@ final class AnnonceController extends AbstractController
 
 
     //DELETE l'Annonce spécifique
-    #[Route('/api/annonce/{id}', name: 'app_annonce_delete', methods: 'DELETE')]
+    #[Route('/annonce/{id}', name: 'app_annonce_delete', methods: 'DELETE')]
     public function deleteAnnonce(int $id, EntityManagerInterface $em): Response{
         $annonce = $this->annonceRepo->find($id);
 
@@ -110,7 +110,7 @@ final class AnnonceController extends AbstractController
 
 
     //POST Ajout d'Annonce
-    #[Route('/api/annonce/add', name: 'app_annonce_add', methods: ['POST'])]
+    #[Route('/annonce/add', name: 'app_annonce_add', methods: ['POST'])]
     public function addAnnonce(Request $request, EntityManagerInterface $em): Response{
         $data = json_decode($request->getContent(), true);
         if(!$data){
@@ -122,7 +122,6 @@ final class AnnonceController extends AbstractController
 
         $newAnnonce = new Annonce();
         $newAnnonce->setTitle($data["title"]);
-        $newAnnonce->setUsername($data["username"]);
         $newAnnonce->setCategorie($data["categorie"]);
         $newAnnonce->setDescription($data["description"]);
         $newAnnonce->setRemuneration($data["remuneration"]);
