@@ -36,7 +36,7 @@ class User
 
     #[ORM\Column(length: 255)]
     #[Groups(['user:info'])]
-    private ?string $role = null;
+    private array $roles = [];
 
     #[ORM\Column]
     #[Groups(['user:info'])]
@@ -126,16 +126,17 @@ class User
         return $this;
     }
 
-    public function getRole(): ?string
+    public function getRole(): array
     {
-        return $this->role;
+        return $this->roles;
     }
 
-    public function setRole(string $role): static
+    public function getRoles(): array
     {
-        $this->role = $role;
+        return $this->roles;
+        $this->roles[] = "ROLE_USER";
 
-        return $this;
+        return array_unique($roles);
     }
 
     public function getCreatedAt(): ?\DateTime

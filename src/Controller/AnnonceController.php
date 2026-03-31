@@ -30,7 +30,7 @@ final class AnnonceController extends AbstractController
 
 
     //GET Toutes les Annonces
-    #[Route('/api/annonce/getAll', name: 'app_annonce_all', methods: ['GET'])]
+    #[Route('/annonce/getAll', name: 'app_annonce_all', methods: ['GET'])]
     public function getAnnonceAll(): Response{
         $annonce = $this->annonceRepo->findAll();
 
@@ -67,6 +67,26 @@ final class AnnonceController extends AbstractController
             "message" => "Pas d'annonce dans cette categorie"
         ]);
     }
+
+    #[Route('/api/annonce/get/{id}', name: 'app_annonce_show', methods: ['GET', 'OPTIONS'])]
+    public function getAnnonce(int $id): Response {
+
+        $annonce = $this->annonceRepo->find($id);
+
+        if (!$annonce) {
+            return $this->json([
+                "status" => "error",
+                "message" => "Annonce non trouvée"
+            ], 404);
+        }
+
+        return $this->json([
+            "status" => "ok",
+            "message" => "Détails de l'annonce",
+            "results" => $annonce
+        ], 200, [], ['groups' => ['annonce:info']]);
+    }
+
 
     //DELETE l'Annonce spécifique
     #[Route('/api/annonce/{id}', name: 'app_annonce_delete', methods: 'DELETE')]
