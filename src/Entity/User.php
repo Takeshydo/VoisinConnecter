@@ -34,10 +34,6 @@ class User
     #[Groups(['user:info'])]
     private ?string $photoProfil = null;
 
-    #[ORM\Column(length: 255)]
-    #[Groups(['user:info'])]
-    private ?string $role = null;
-
     #[ORM\Column]
     #[Groups(['user:info'])]
     private ?\DateTime $createdAt = null;
@@ -60,6 +56,9 @@ class User
     #[ORM\OneToMany(targetEntity: Annonce::class, mappedBy: 'user_annonce')]
     #[Groups(['user:info'])]
     private Collection $annonces;
+
+    #[ORM\Column(type: Types::SIMPLE_ARRAY)]
+    private array $role = [];
 
     public function __construct()
     {
@@ -126,17 +125,6 @@ class User
         return $this;
     }
 
-    public function getRole(): ?string
-    {
-        return $this->role;
-    }
-
-    public function setRole(string $role): static
-    {
-        $this->role = $role;
-
-        return $this;
-    }
 
     public function getCreatedAt(): ?\DateTime
     {
@@ -212,6 +200,18 @@ class User
                 $annonce->setUserAnnonce(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getRole(): array
+    {
+        return $this->role;
+    }
+
+    public function setRole(array $role): static
+    {
+        $this->role = $role;
 
         return $this;
     }
