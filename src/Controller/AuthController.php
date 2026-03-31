@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Repository\AdminRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,26 +13,27 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class AuthController extends AbstractController
 {
-    public function __construct(private UserRepository $userRepo) {}
+    public function __construct(
+        private UserRepository $userRepo,
+        private AdminRepository $adminRepo
+    ) {}
 
     private function getSalt(): string
     {
         return md5($this->getParameter('app.password_salt'));
     }
 
-    #[Route('/user/register', name: 'app_user_register', methods: ['POST', 'OPTIONS'])]
+    #[Route('/auth/register', name: 'app_auth_register', methods: ['POST', 'OPTIONS'])]
     public function register(Request $request, EntityManagerInterface $em): Response
     {
         $data = json_decode($request->getContent(), true);
 
         if (empty($data['nom']) || empty($data['email']) || empty($data['password'])) {
-            return $this->json([
-                "status" => "error",
-                "message" => "Les champs 'nom', 'email' et 'password' sont obligatoires." ],);
+            return $this->json(["status" => "error", "message" => "Données incomplètes."]);
         }
 
-        if ($this->userRepo->findOneBy(['email' => $data['email']])) {
-            return $this->json(["status" => "error", "message" => "Cet email est déjà utilisé."],);
+        if ($this->userRepo->findOneBy(['email' => $data['email']]) || $this->adminRepo->findOneBy(['email' => $data['email']])) {
+            return $this->json(["status" => "error", "message" => "Email déjà utilisé."]);
         }
 
         $user = new User();
@@ -39,54 +41,65 @@ final class AuthController extends AbstractController
 
         $user->setNom($data['nom']);
         $user->setEmail($data['email']);
-        $user->setPassword(md5($data['password'] . $salt));
+
+        // Hachage du mot de passe
+        $hashedPassword = md5($data['password'] . $salt);
+        $user->setPassword($hashedPassword);
+
+        // --- GÉNÉRATION DU TOKEN AVEC EMAIL + PASSWORD ---
+        $tokenRaw = $data['email'] . $hashedPassword . uniqid('token_', true);
+        $user->setToken(hash('sha256', $tokenRaw));
+
+        // AJOUT : Date de création du token
+        $user->setTokenCreatedAt(new \DateTimeImmutable());
 
         $user->setRole('ROLE_USER');
         $user->setCreatedAt(new \DateTime());
         $user->setPhotoProfil('');
-        $user->setToken(hash('sha256', uniqid() . $data['email']));
+
         $em->persist($user);
         $em->flush();
 
         return $this->json([
             "status" => "ok",
-            "message" => "Utilisateur créé avec succès",
-            "result" => [
-                "id" => $user->getId(),
-                "nom" => $user->getNom(),
-                "email" => $user->getEmail(),
-                "role" => $user->getRole(),
-                "token" => $user->getToken()
-            ]
-        ],);
+            "message" => "Compte créé !",
+            "result" => ["nom" => $user->getNom(), "token" => $user->getToken()]
+        ]);
     }
 
-    #[Route('/user/login', name: 'app_user_login', methods: ['POST', 'OPTIONS'])]
-    public function login(Request $request): Response
+    #[Route('/auth/login', name: 'app_auth_login', methods: ['POST', 'OPTIONS'])]
+    public function login(Request $request, EntityManagerInterface $em): Response
     {
         $data = json_decode($request->getContent(), true);
 
         if (empty($data['email']) || empty($data['password'])) {
-            return $this->json(["status" => "error", "message" => "Email et mot de passe requis."],);
-        }
-
-        $user = $this->userRepo->findOneBy(["email" => $data["email"]]);
-
-        if (!$user) {
-            return $this->json(["status" => "error", "message" => "Utilisateur introuvable."],);
+            return $this->json(["status" => "error", "message" => "Email et mot de passe requis."]);
         }
 
         $salt = $this->getSalt();
+        $hashedPassword = md5($data['password'] . $salt);
 
-        if (md5($data['password'] . $salt) === $user->getPassword()) {
+        $account = $this->userRepo->findOneBy(["email" => $data["email"]]) ?? $this->adminRepo->findOneBy(["email" => $data["email"]]);
+
+        if ($account && $account->getPassword() === $hashedPassword) {
+
+            // AJOUT : Régénération du token à chaque connexion pour prolonger la session
+            $newTokenRaw = $account->getEmail() . $hashedPassword . uniqid('token_', true);
+            $account->setToken(hash('sha256', $newTokenRaw));
+            $account->setTokenCreatedAt(new \DateTimeImmutable());
+
+
+            $em->persist($account);
+            $em->flush();
+
             return $this->json([
                 "status" => "ok",
-                "message" => "Connexion réussie",
-                "token" => $user->getToken(),
-                "role" => $user->getRole()
-            ],);
+                "message" => "Connecté !",
+                "token" => $account->getToken(),
+                "role" => $account->getRole()
+            ], );
         }
 
-        return $this->json(["status" => "error", "message" => "Mot de passe incorrect."],);
+        return $this->json(["status" => "error", "message" => "Identifiants invalides."]);
     }
 }
