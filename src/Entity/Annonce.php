@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\AnnonceRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: AnnonceRepository::class)]
 class Annonce
@@ -13,24 +14,32 @@ class Annonce
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
-
     #[ORM\Column(length: 255)]
+    #[Groups('annonce:info')]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups('annonce:info')]
     private ?string $description = null;
 
     #[ORM\Column]
+    #[Groups('annonce:info')]
     private ?int $remuneration = null;
 
     #[ORM\Column]
+    #[Groups('annonce:info')]
     private ?\DateTime $date_active = null;
 
     #[ORM\Column]
+    #[Groups('annonce:info')]
     private ?\DateTime $creation_date = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups('annonce:info')]
     private ?string $categorie = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $username = null;
 
     public function getId(): ?int
     {
@@ -105,6 +114,18 @@ class Annonce
     public function setCategorie(string $categorie): static
     {
         $this->categorie = $categorie;
+
+        return $this;
+    }
+
+    public function getUsername(): ?string
+    {
+        return $this->username;
+    }
+
+    public function setUsername(string $username): static
+    {
+        $this->username = $username;
 
         return $this;
     }

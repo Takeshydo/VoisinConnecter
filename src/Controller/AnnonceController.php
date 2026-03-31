@@ -7,7 +7,9 @@ use App\Entity\Annonce;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Validator\Constraints\Date;
 
 final class AnnonceController extends AbstractController
 {
@@ -28,9 +30,10 @@ final class AnnonceController extends AbstractController
 
 
     //GET Toutes les Annonces
-    #[Route('/api/annonce', name: 'app_annonce_all', methods: ['GET'])]
+    #[Route('/api/annonce/getAll', name: 'app_annonce_all', methods: ['GET'])]
     public function getAnnonceAll(): Response{
         $annonce = $this->annonceRepo->findAll();
+
         if(empty($annonce)){
             return $this->json([
                 "status" => "error",
@@ -41,8 +44,28 @@ final class AnnonceController extends AbstractController
                 "status" => "success",
                 "message" => "liste des annonces",
                 "results" => $annonce
-            ]);
+            ], 200, [], ['groups' => ['annonce:info']]);
         }
+    }
+
+    #[Route('/api/annonce/{category}', name: 'app_annonce_category', methods: ['GET'])]
+    public function getAnnonceByCategory(string $category): Response{
+        $annonce = $this->annonceRepo->findAll();
+
+        foreach($annonce as $annonces){
+            if($annonces->getCategorie() === $category){
+                return $this->json([
+                    "status" => "success",
+                    "message" => "liste des annonces par catégorie",
+                    "results" => $annonce
+                ]);
+            }
+        }
+
+        return $this->json([
+            "status" => "error",
+            "message" => "Pas d'annonce dans cette categorie"
+        ]);
     }
 
     //DELETE l'Annonce spécifique
@@ -67,7 +90,7 @@ final class AnnonceController extends AbstractController
 
 
     //POST Ajout d'Annonce
-    #[Route('/api/annonce/', name: 'app_annonce_add', methods: ['POST'])]
+    #[Route('/api/annonce/add', name: 'app_annonce_add', methods: ['POST'])]
     public function addAnnonce(Request $request, EntityManagerInterface $em): Response{
         $data = json_decode($request->getContent(), true);
         if(!$data){
@@ -77,18 +100,14 @@ final class AnnonceController extends AbstractController
             ]);
         }
 
-        $user = $this->userRepo->findOneBy(["email" => $data["email"]]);
-        if(!$user){
-            return $this->json(["status" => "error", "message" => "email invalide"]);
-        }
-
         $newAnnonce = new Annonce();
         $newAnnonce->setTitle($data["title"]);
+        $newAnnonce->setUsername($data["username"]);
         $newAnnonce->setCategorie($data["categorie"]);
         $newAnnonce->setDescription($data["description"]);
         $newAnnonce->setRemuneration($data["remuneration"]);
-        $newAnnonce->setDateActive(new \DateTime($data["dateActive"]));
-        $newAnnonce->setCreationDate(new \DateTime($data["creationDate"]));
+        $newAnnonce->setDateActive(new \DateTime($data["dateActive"])  );
+        $newAnnonce->setCreationDate(new \DateTime);
 
         $em->persist($newAnnonce);
         $em->flush();
