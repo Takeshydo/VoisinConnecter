@@ -3,8 +3,11 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User
@@ -12,34 +15,56 @@ class User
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:info'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:info'])]
     private ?string $Nom = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:info'])]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:info'])]
     private ?string $email = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['user:info'])]
     private ?string $photoProfil = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:info'])]
     private ?string $role = null;
 
     #[ORM\Column]
+    #[Groups(['user:info'])]
     private ?\DateTime $createdAt = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:info'])]
     private ?string $token = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['user:info'])]
     private ?\DateTimeImmutable $tokenCreatedAt = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:info'])]
     private ?string $prenom = null;
+
+    /**
+     * @var Collection<int, Annonce>
+     */
+    #[ORM\OneToMany(targetEntity: Annonce::class, mappedBy: 'user_annonce')]
+    #[Groups(['user:info'])]
+    private Collection $annonces;
+
+    public function __construct()
+    {
+        $this->annonces = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -157,6 +182,36 @@ class User
     public function setPrenom(string $prenom): static
     {
         $this->prenom = $prenom;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Annonce>
+     */
+    public function getAnnonces(): Collection
+    {
+        return $this->annonces;
+    }
+
+    public function addAnnonce(Annonce $annonce): static
+    {
+        if (!$this->annonces->contains($annonce)) {
+            $this->annonces->add($annonce);
+            $annonce->setUserAnnonce($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAnnonce(Annonce $annonce): static
+    {
+        if ($this->annonces->removeElement($annonce)) {
+            // set the owning side to null (unless already changed)
+            if ($annonce->getUserAnnonce() === $this) {
+                $annonce->setUserAnnonce(null);
+            }
+        }
 
         return $this;
     }

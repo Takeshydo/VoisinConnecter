@@ -15,31 +15,33 @@ class Annonce
     #[ORM\Column]
     private ?int $id = null;
     #[ORM\Column(length: 255)]
-    #[Groups('annonce:info')]
+    #[Groups(['annonce:info'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups('annonce:info')]
+    #[Groups(['annonce:info'])]
     private ?string $description = null;
 
     #[ORM\Column]
-    #[Groups('annonce:info')]
+    #[Groups(['annonce:info'])]
     private ?int $remuneration = null;
 
     #[ORM\Column]
-    #[Groups('annonce:info')]
+    #[Groups(['annonce:info'])]
     private ?\DateTime $date_active = null;
 
     #[ORM\Column]
-    #[Groups('annonce:info')]
+    #[Groups(['annonce:info'])]
     private ?\DateTime $creation_date = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups('annonce:info')]
+    #[Groups(['annonce:info'])]
     private ?string $categorie = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $username = null;
+    #[ORM\ManyToOne(inversedBy: 'annonces')]
+    #[Groups(['user:info'])]
+    private ?User $user_annonce = null;
+
 
     public function getId(): ?int
     {
@@ -118,15 +120,16 @@ class Annonce
         return $this;
     }
 
-    public function getUsername(): ?string
+    public function getUserAnnonce(): ?User
     {
-        return $this->username;
+        return $this->user_annonce;
     }
 
-    public function setUsername(string $username): static
+    public function setUserAnnonce(?User $user_annonce): static
     {
-        $this->username = $username;
+        $this->user_annonce = $user_annonce;
 
         return $this;
     }
+
 }

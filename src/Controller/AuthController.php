@@ -9,7 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Attribute\Route;use function Symfony\Component\DependencyInjection\Loader\Configurator\env;
 
 final class AuthController extends AbstractController
 {
@@ -63,45 +63,58 @@ final class AuthController extends AbstractController
         return $this->json([
             "status" => "ok",
             "message" => "Compte créé !",
-            "result" => ["nom" => $user->getNom(), "prenom" => $user->getPrenom(), "token" => $user->getToken()]
-        ]);
+            "result" => $user,
+        ], 200, [], ['groups' => ['user:info']]);
     }
 
     #[Route('/auth/login', name: 'app_auth_login', methods: ['POST', 'OPTIONS'])]
-    public function login(Request $request, EntityManagerInterface $em): Response
+    public function login(Request $request): Response
     {
         $data = json_decode($request->getContent(), true);
 
-        if (empty($data['email']) || empty($data['password'])) {
-            return $this->json(["status" => "error", "message" => "Email et mot de passe requis."]);
+        if (!$data) {
+            return $this->json(["status" => "error", "message" => "Email ou mot de passe requis."]);
+        }
+
+        $account = $this->userRepo->findOneBy(['email' => $data['email']]);
+
+        if (!$account) {
+            return $this->json(["status" => "error", "message" => "Email inexistant."]);
         }
 
         $salt = $this->getSalt();
-        $hashedPassword = md5($data['password'] . $salt);
 
-        $account = $this->userRepo->findOneBy(["email" => $data["email"]]) ?? $this->adminRepo->findOneBy(["email" => $data["email"]]);
-
-        if ($account && $account->getPassword() === $hashedPassword) {
-
-            // Régénération du token à chaque connexion pour prolonger la session
-            $newTokenRaw = $account->getEmail() . $hashedPassword . uniqid('token_', true);
-            $account->setToken(hash('sha256', $newTokenRaw));
-            $account->setTokenCreatedAt(new \DateTimeImmutable());
-
-
-            $em->persist($account);
-            $em->flush();
-
+        if(md5(($data['password'] . $salt)) === $account->getPassword()) {
             return $this->json([
                 "status" => "ok",
                 "message" => "Connecté !",
-                "token" => $account->getToken(),
-                "role" => $account->getRole(),
-                "nom" => $account->getNom(),
-                "prenom" => $account->getPrenom()
-            ]);
+                "result" => $account,
+            ], 200, [], ['groups' => ['user:info']]);
+        } else{
+            return $this->json(["status" => "error", "message" => "Identifiants invalides."]);
+        }
+    }
+
+    #[Route('/user/token', name: 'user_token', methods: ['GET', 'OPTIONS'])]
+    public function token(Request $request): Response
+    {
+        $token = $request->headers->get('Authorization');
+
+        if(!$token) {
+            return $this->json(["status" => "error", "message" => "Aucun token."]);
+        }
+        $token = substr($token, 7);
+
+        $user = $this->userRepo->findOneBy(['token' => $token]);
+
+        if(!$user) {
+            return $this->json(["status"=>"error", "message"=>"Token not valide."]);
         }
 
-        return $this->json(["status" => "error", "message" => "Identifiants invalides."]);
+        return $this->json([
+            "status" => "ok",
+            "message" => "connected",
+            "result" => $user,
+        ], 200, [], ['groups' => ['user:info']]);
     }
 }
