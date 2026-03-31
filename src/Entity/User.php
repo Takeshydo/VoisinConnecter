@@ -34,10 +34,6 @@ class User
     #[Groups(['user:info'])]
     private ?string $photoProfil = null;
 
-    #[ORM\Column(length: 255)]
-    #[Groups(['user:info'])]
-    private array $roles = [];
-
     #[ORM\Column]
     #[Groups(['user:info'])]
     private ?\DateTime $createdAt = null;
@@ -129,18 +125,6 @@ class User
         return $this;
     }
 
-    public function getRole(): array
-    {
-        return $this->roles;
-    }
-
-    public function getRoles(): array
-    {
-        return $this->roles;
-        $this->roles[] = "ROLE_USER";
-
-        return array_unique($roles);
-    }
 
     public function getCreatedAt(): ?\DateTime
     {
@@ -216,6 +200,18 @@ class User
                 $annonce->setUserAnnonce(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getRole(): array
+    {
+        return $this->role;
+    }
+
+    public function setRole(array $role): static
+    {
+        $this->role = $role;
 
         return $this;
     }
