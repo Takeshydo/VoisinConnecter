@@ -23,7 +23,6 @@ class User
     private ?string $Nom = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user:info'])]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
