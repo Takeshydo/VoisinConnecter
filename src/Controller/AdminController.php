@@ -18,15 +18,12 @@ final class AdminController extends AbstractController
         private EntityManagerInterface $em
     ) {}
 
-
-    // Request pour savoir si le token admin est valide
     private function getAuthenticatedAdmin(Request $request)
     {
         $token = $request->headers->get('Authorization');
         if (!$token) return null;
 
         $token = str_replace('Bearer ', '', $token);
-
         $admin = $this->userRepo->findOneBy(['token' => $token]);
 
         if ($admin && in_array('ROLE_ADMIN', $admin->getRole())) {
@@ -36,12 +33,12 @@ final class AdminController extends AbstractController
         return null;
     }
 
-    #[Route('/admin/profil', name: 'app_admin_update_profile', methods: ['PUT', 'OPTIONS'])]
+    #[Route('/admin/profile', name: 'app_admin_update_profile', methods: ['PUT', 'OPTIONS'])]
     public function updateProfile(Request $request): Response
     {
         $admin = $this->getAuthenticatedAdmin($request);
         if (!$admin) {
-            return $this->json(["status" => "error", "message" => "Accès non autorisé ou session expirée."]);
+            return $this->json(["status" => "error", "message" => "Accès non autorisé."]);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -49,22 +46,16 @@ final class AdminController extends AbstractController
             return $this->json(["status" => "error", "message" => "Données invalides."]);
         }
 
-        if (isset($data['nom'])) {
-            $admin->setNom($data['nom']);
-        }
-        if (isset($data['prenom'])) {
-            $admin->setPrenom($data['prenom']);
-        }
-        if (isset($data['photoProfil'])) {
-            $admin->setPhotoProfil($data['photoProfil']);
-        }
+        if (isset($data['nom'])) $admin->setNom($data['nom']);
+        if (isset($data['prenom'])) $admin->setPrenom($data['prenom']);
+        if (isset($data['photoProfil'])) $admin->setPhotoProfil($data['photoProfil']);
 
         $this->em->persist($admin);
         $this->em->flush();
 
         return $this->json([
             "status" => "ok",
-            "message" => "Profil administrateur mis à jour.",
+            "message" => "Profil mis à jour.",
             "result" => [
                 "nom" => $admin->getNom(),
                 "prenom" => $admin->getPrenom(),
@@ -78,11 +69,10 @@ final class AdminController extends AbstractController
     {
         $admin = $this->getAuthenticatedAdmin($request);
         if (!$admin) {
-            return $this->json(["status" => "error", "message" => "Accès non autorisé ou session expirée."]);
+            return $this->json(["status" => "error", "message" => "Accès non autorisé."]);
         }
 
         $userToDelete = $this->userRepo->find($id);
-
         if (!$userToDelete) {
             return $this->json(["status" => "error", "message" => "Utilisateur introuvable."]);
         }
@@ -90,10 +80,7 @@ final class AdminController extends AbstractController
         $this->em->remove($userToDelete);
         $this->em->flush();
 
-        return $this->json([
-            "status" => "ok",
-            "message" => "L'utilisateur a été supprimé avec succès."
-        ]);
+        return $this->json(["status" => "ok", "message" => "Utilisateur supprimé."]);
     }
 
     #[Route('/admin/annonce/{id}', name: 'app_admin_delete_annonce', methods: ['DELETE', 'OPTIONS'])]
@@ -104,19 +91,52 @@ final class AdminController extends AbstractController
             return $this->json(["status" => "error", "message" => "Accès non autorisé."]);
         }
 
-        $annonceToDelete = $this->annonceRepo->find($id);
-
-        if (!$annonceToDelete) {
+        $annonce = $this->annonceRepo->find($id);
+        if (!$annonce) {
             return $this->json(["status" => "error", "message" => "Annonce introuvable."]);
         }
 
-        $this->em->remove($annonceToDelete);
+        $this->em->remove($annonce);
+        $this->em->flush();
+
+        return $this->json(["status" => "ok", "message" => "Annonce supprimée."]);
+    }
+
+    #[Route('/admin/annonce/{id}', name: 'app_admin_edit_annonce', methods: ['PUT', 'OPTIONS'])]
+    public function editAnnonce(Request $request, int $id): Response
+    {
+        $admin = $this->getAuthenticatedAdmin($request);
+        if (!$admin) {
+            return $this->json(["status" => "error", "message" => "Accès non autorisé."]);
+        }
+
+        $annonce = $this->annonceRepo->find($id);
+        if (!$annonce) {
+            return $this->json(["status" => "error", "message" => "Annonce introuvable."]);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        if (!$data) {
+            return $this->json(["status" => "error", "message" => "Données invalides."]);
+        }
+
+        if (isset($data['title'])) $annonce->setTitle($data['title']);
+        if (isset($data['description'])) $annonce->setDescription($data['description']);
+        if (isset($data['remuneration'])) $annonce->setRemuneration($data['remuneration']);
+        if (isset($data['categorie'])) $annonce->setCategorie($data['categorie']);
+
+        if (isset($data['date_active'])) {
+            $annonce->setDateActive(new \DateTime($data['date_active']));
+        }
+
+        $this->em->persist($annonce);
         $this->em->flush();
 
         return $this->json([
             "status" => "ok",
-            "message" => "L'annonce a été supprimée avec succès par la modération."
-        ]);
+            "message" => "Annonce modifiée par l'administrateur.",
+            "result" => $annonce
+        ], 200, [], ['groups' => ['annonce:info']]);
     }
 
     #[Route('/admin/stats', name: 'app_admin_stats', methods: ['GET', 'OPTIONS'])]
@@ -131,15 +151,13 @@ final class AdminController extends AbstractController
         $totalAnnonces = $this->annonceRepo->count([]);
 
         $qb = $this->annonceRepo->createQueryBuilder('a')
-            ->select('c.nom as categorieNom', 'COUNT(a.id) as total')
-            ->join('a.categorie', 'c')
-            ->groupBy('c.id')
+            ->select('a.categorie as categorieNom', 'COUNT(a.id) as total')
+            ->groupBy('a.categorie')
             ->orderBy('total', 'DESC')
             ->setMaxResults(1);
 
         $topCategoryResult = $qb->getQuery()->getOneOrNullResult();
-
-        $topCategoryName = $topCategoryResult ? $topCategoryResult['categorieNom'] : 'Aucune annonce';
+        $topCategoryName = $topCategoryResult ? $topCategoryResult['categorieNom'] : 'Aucune';
 
         return $this->json([
             "status" => "ok",
