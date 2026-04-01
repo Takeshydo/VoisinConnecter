@@ -18,8 +18,8 @@ final class ProfilController extends AbstractController
         private AnnonceRepository $annonceRepo
     ) {}
 
-    #[Route('/auth/profil', name: 'app_auth_update_profile', methods: ['PUT', 'OPTIONS'])]
-    public function updateProfile(Request $request): Response
+    #[Route('/auth/update', name: 'app_auth_update_profil', methods: ['PUT', 'OPTIONS'])]
+    public function updateProfil(Request $request): Response
     {
         $user = $this->getAuthenticatedUser($request);
 
@@ -46,7 +46,7 @@ final class ProfilController extends AbstractController
         ], 200, [], ['groups' => ['user:info']]);
     }
 
-    #[Route('/auth/account', name: 'app_auth_delete_account', methods: ['DELETE', 'OPTIONS'])]
+    #[Route('/auth/delete', name: 'app_auth_delete_account', methods: ['DELETE', 'OPTIONS'])]
     public function deleteAccount(Request $request): Response
     {
         $user = $this->getAuthenticatedUser($request);
@@ -85,8 +85,8 @@ final class ProfilController extends AbstractController
         ]);
     }
 
-    #[Route('/admin/profile', name: 'app_admin_update_profile', methods: ['PUT', 'OPTIONS'])]
-    public function updateAdminProfile(Request $request): Response
+    #[Route('/admin/update', name: 'app_admin_update_profil', methods: ['PUT', 'OPTIONS'])]
+    public function updateAdminProfil(Request $request): Response
     {
         $admin = $this->getAuthenticatedAdmin($request);
         if (!$admin) {
