@@ -49,7 +49,7 @@ final class AnnoncesController extends AbstractController
         ], 200, [], ['groups' => ['annonce:info']]);
     }
 
-    #[Route('/api/annonce/get/{id}', name: 'app_annonce_show', methods: ['GET', 'OPTIONS'])]
+    #[Route('/annonce/get/{id}', name: 'app_annonce_show', methods: ['GET', 'OPTIONS'])]
     public function getAnnonce(int $id): Response
     {
         $annonce = $this->annonceRepo->find($id);
