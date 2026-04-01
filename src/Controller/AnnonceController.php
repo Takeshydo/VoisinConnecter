@@ -83,7 +83,7 @@ final class AnnonceController extends AbstractController
         $annonce->setDescription($data['description']);
         $annonce->setRemuneration($data['remuneration']);
         $annonce->setCategorie($data['categorie']);
-        $annonce->setDateActive(new \DateTime($data['dateActive'] ?? $data['date_active']));
+        $annonce->setDateActive((new \DateTime()['dateActive'] ?? $data['date_active'])); //REVOIR Comment Faire ici
         $annonce->setCreationDate(new \DateTime());
         $annonce->setUserAnnonce($user);
 
@@ -97,7 +97,7 @@ final class AnnonceController extends AbstractController
         ], 200, [], ['groups' => ['annonce:info']]);
     }
 
-    #[Route('/auth/annonce/{id}', name: 'app_auth_update_annonce', methods: ['PUT', 'OPTIONS'])]
+    #[Route('/annonce/update/{id}', name: 'app_auth_update_annonce', methods: ['PUT', 'OPTIONS'])]
     public function updateAnnonce(Request $request, int $id): Response
     {
         $user = $this->getAuthenticatedUser($request);
@@ -126,7 +126,7 @@ final class AnnonceController extends AbstractController
         ], 200, [], ['groups' => ['annonce:info']]);
     }
 
-    #[Route('/auth/annonce/{id}', name: 'app_auth_delete_annonce', methods: ['DELETE', 'OPTIONS'])]
+    #[Route('/user/annonce/{id}', name: 'app_auth_delete_annonce', methods: ['DELETE', 'OPTIONS'])]
     public function deleteAnnonce(Request $request, int $id): Response
     {
         $user = $this->getAuthenticatedUser($request);
@@ -142,7 +142,7 @@ final class AnnonceController extends AbstractController
         return $this->json(["status" => "ok", "message" => "Annonce supprimée."]);
     }
 
-    #[Route('/admin/annonce/{id}', name: 'app_admin_edit_annonce', methods: ['PUT', 'OPTIONS'])]
+    #[Route('/admin/annonce/update/{id}', name: 'app_admin_edit_annonce', methods: ['PUT', 'OPTIONS'])]
     public function adminEditAnnonce(Request $request, int $id): Response
     {
         $admin = $this->getAuthenticatedAdmin($request);
@@ -178,7 +178,7 @@ final class AnnonceController extends AbstractController
         ], 200, [], ['groups' => ['annonce:info']]);
     }
 
-    #[Route('/admin/annonce/{id}', name: 'app_admin_delete_annonce', methods: ['DELETE', 'OPTIONS'])]
+    #[Route('/admin/annonce/delete/{id}', name: 'app_admin_delete_annonce', methods: ['DELETE', 'OPTIONS'])]
     public function adminDeleteAnnonce(Request $request, int $id): Response
     {
         $admin = $this->getAuthenticatedAdmin($request);
