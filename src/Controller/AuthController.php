@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
-use App\Repository\AdminRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,7 +14,6 @@ final class AuthController extends AbstractController
 {
     public function __construct(
         private UserRepository $userRepo,
-        private AdminRepository $adminRepo
     ) {}
 
     private function getSalt(): string
@@ -28,11 +26,11 @@ final class AuthController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        if (empty($data['nom']) || empty($data['prenom']) || empty($data['email']) || empty($data['password'])) {
+        if (!$data) {
             return $this->json(["status" => "error", "message" => "Données incomplètes."]);
         }
 
-        if ($this->userRepo->findOneBy(['email' => $data['email']]) || $this->adminRepo->findOneBy(['email' => $data['email']])) {
+        if ($this->userRepo->findOneBy(['email' => $data['email']])) {
             return $this->json(["status" => "error", "message" => "Email déjà utilisé."]);
         }
 

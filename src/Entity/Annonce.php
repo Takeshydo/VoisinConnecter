@@ -13,6 +13,7 @@ class Annonce
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:info'])]
     private ?int $id = null;
     #[ORM\Column(length: 255)]
     #[Groups(['annonce:info'])]

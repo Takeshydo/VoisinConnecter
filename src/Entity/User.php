@@ -57,7 +57,8 @@ class User
     #[Groups(['user:info'])]
     private Collection $annonces;
 
-    #[ORM\Column(type: Types::SIMPLE_ARRAY)]
+    #[ORM\Column]
+    #[Groups(['user:info'])]
     private array $role = [];
 
     public function __construct()
@@ -212,7 +213,6 @@ class User
     public function setRole(array $role): static
     {
         $this->role = $role;
-
         return $this;
     }
 }
