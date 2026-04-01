@@ -45,11 +45,9 @@ final class AuthController extends AbstractController
         $hashedPassword = md5($data['password'] . $salt);
         $user->setPassword($hashedPassword);
 
-        // --- GÉNÉRATION DU TOKEN AVEC EMAIL + PASSWORD ---
-        $tokenRaw = $data['email'] . $hashedPassword . uniqid('token_', true);
+        // --- tokenraw => email+uniqid => token en sha256 ---
+        $tokenRaw = $data['email'] . uniqid('token_', true);
         $user->setToken(hash('sha256', $tokenRaw));
-
-        $user->setTokenCreatedAt(new \DateTimeImmutable());
 
         $user->setRole(['ROLE_USER']);
         $user->setCreatedAt(new \DateTime());
@@ -71,7 +69,7 @@ final class AuthController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         if (!$data) {
-            return $this->json(["status" => "error", "message" => "Email ou mot de passe requis."]);
+            return $this->json(["status" => "error", "message" => "Email et mot de passe requis."]);
         }
 
         $account = $this->userRepo->findOneBy(['email' => $data['email']]);
@@ -89,7 +87,7 @@ final class AuthController extends AbstractController
                 "result" => $account,
             ], 200, [], ['groups' => ['user:info']]);
         } else{
-            return $this->json(["status" => "error", "message" => "Identifiants invalides."]);
+            return $this->json(["status" => "error", "message" => "Email ou mot de passe invalides."]);
         }
     }
 
@@ -115,4 +113,35 @@ final class AuthController extends AbstractController
             "result" => $user,
         ], 200, [], ['groups' => ['user:info']]);
     }
+
+    #[Route('/auth/logout', name: 'app_auth_logout', methods: ['POST', 'OPTIONS'])]
+    public function logout(Request $request, EntityManagerInterface $em): Response
+    {
+        // 1. Récupérer le token depuis les headers (comme tu le fais dans AdminController)
+        $tokenHeader = $request->headers->get('Authorization');
+
+        if (!$tokenHeader) {
+            return $this->json(["status" => "error", "message" => "Aucun token fourni."]);
+        }
+
+        // On nettoie la chaîne pour ne garder que le token
+        $token = str_replace('Bearer ', '', $tokenHeader);
+
+        // 2. Chercher à qui appartient ce token (User ou Admin)
+        $account = $this->userRepo->findOneBy(['token' => $token]) ?? $this->adminRepo->findOneBy(['token' => $token]);
+
+        if (!$account) {
+            return $this->json(["status" => "error", "message" => "Token invalide ou compte déjà déconnecté."]);
+        }
+
+        $em->persist($account);
+        $em->flush();
+
+        return $this->json([
+            "status" => "ok",
+            "message" => "Déconnexion réussie."
+        ]);
+    }
+
+
 }

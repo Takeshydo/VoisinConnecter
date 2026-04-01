@@ -42,17 +42,10 @@ class User
     #[Groups(['user:info'])]
     private ?string $token = null;
 
-    #[ORM\Column(nullable: true)]
-    #[Groups(['user:info'])]
-    private ?\DateTimeImmutable $tokenCreatedAt = null;
-
     #[ORM\Column(length: 255)]
     #[Groups(['user:info'])]
     private ?string $prenom = null;
 
-    /**
-     * @var Collection<int, Annonce>
-     */
     #[ORM\OneToMany(targetEntity: Annonce::class, mappedBy: 'user_annonce')]
     #[Groups(['user:info'])]
     private Collection $annonces;
@@ -151,18 +144,6 @@ class User
         return $this;
     }
 
-    public function getTokenCreatedAt(): ?\DateTimeImmutable
-    {
-        return $this->tokenCreatedAt;
-    }
-
-    public function setTokenCreatedAt(?\DateTimeImmutable $tokenCreatedAt): static
-    {
-        $this->tokenCreatedAt = $tokenCreatedAt;
-
-        return $this;
-    }
-
     public function getPrenom(): ?string
     {
         return $this->prenom;
@@ -175,9 +156,6 @@ class User
         return $this;
     }
 
-    /**
-     * @return Collection<int, Annonce>
-     */
     public function getAnnonces(): Collection
     {
         return $this->annonces;
