@@ -143,5 +143,44 @@ final class AuthController extends AbstractController
         ]);
     }
 
+    #[Route('/auth/profil', name: 'app_auth_update_profile', methods: ['PUT', 'OPTIONS'])]
+    public function updateProfile(Request $request, EntityManagerInterface $em): Response
+    {
+        $tokenHeader = $request->headers->get('Authorization');
+        if (!$tokenHeader) {
+            return $this->json(["status" => "error", "message" => "Non autorisé."]);
+        }
+
+        $token = str_replace('Bearer ', '', $tokenHeader);
+        $user = $this->userRepo->findOneBy(['token' => $token]);
+
+        if (!$user) {
+            return $this->json(["status" => "error", "message" => "Utilisateur introuvable ou session expirée."]);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        if (!$data) {
+            return $this->json(["status" => "error", "message" => "Données invalides."]);
+        }
+
+        if (isset($data['nom'])) {
+            $user->setNom($data['nom']);
+        }
+        if (isset($data['prenom'])) {
+            $user->setPrenom($data['prenom']);
+        }
+        if (isset($data['photoProfil'])) {
+            $user->setPhotoProfil($data['photoProfil']);
+        }
+
+        $em->persist($user);
+        $em->flush();
+
+        return $this->json([
+            "status" => "ok",
+            "message" => "Profil mis à jour avec succès.",
+            "result" => $user
+        ], 200, [], ['groups' => ['user:info']]);
+    }
 
 }
