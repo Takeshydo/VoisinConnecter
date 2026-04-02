@@ -136,4 +136,23 @@ final class ProfilController extends AbstractController
 
         return $this->json(["status" => "ok", "message" => "Utilisateur supprimé."]);
     }
+
+    #[Route('/admin/users', name: 'app_admin_get_users', methods: ['GET', 'OPTIONS'])]
+    public function getAllUsers(Request $request): Response
+    {
+        // On vérifie que c'est bien un admin
+        $admin = $this->getAuthenticatedAdmin($request);
+        if (!$admin) {
+            return $this->json(["status" => "error", "message" => "Accès non autorisé."]);
+        }
+
+        $users = $this->userRepo->findAll();
+
+        return $this->json([
+            "status" => "success",
+            "message" => "Liste des utilisateurs récupérée.",
+            "result" => $users
+        ], 200, [], ['groups' => ['user:info']]);
+    }
+
 }
