@@ -18,7 +18,7 @@ final class ProfilController extends AbstractController
         private AnnonceRepository $annonceRepo
     ) {}
 
-    #[Route('/profil/update', name: 'app_update_profil', methods: ['PUT', 'OPTIONS'])]
+    #[Route('/user/update', name: 'app_update_profil', methods: ['PUT', 'OPTIONS'])]
     public function updateProfil(Request $request): Response
     {
 

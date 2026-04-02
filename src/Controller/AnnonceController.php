@@ -83,7 +83,7 @@ final class AnnonceController extends AbstractController
     }
 
     #[Route('/annonce/get/{id}', name: 'app_annonce_show', methods: ['GET', 'OPTIONS'])]
-    public function getAnnonce(int $id): Response
+    public function getAnnonceById(int $id): Response
     {
         $annonce = $this->annonceRepo->find($id);
 
@@ -96,6 +96,27 @@ final class AnnonceController extends AbstractController
             "message" => "Détails de l'annonce",
             "result" => $annonce
         ], 200, [], ['groups' => ['annonce:info']]);
+    }
+
+    #[Route('/annonce/createAt/', name: 'app_annonce_create_at', methods: ['GET', 'OPTIONS'])]
+    public function getAnnonceCreateAt(): Response{
+
+        $annonces = $this->annonceRepo->findBy([], ['creation_date' => 'DESC']);
+
+        if (empty($annonces)) {
+            return $this->json([
+                "status" => "success",
+                "message" => "Aucune annonce en base de données",
+                "result" => []
+            ]);
+        }
+
+        return $this->json([
+            "status" => "success",
+            "message" => "Liste des annonces de la plus récente à la plus ancienne",
+            "result" => $annonces
+        ], 200, [], ['groups' => ['annonce:info']]);
+
     }
 
     #[Route('/create/annonce', name: 'app_create_annonce', methods: ['POST', 'OPTIONS'])]
