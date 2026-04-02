@@ -40,7 +40,7 @@ class Annonce
     private ?string $categorie = null;
 
     #[ORM\ManyToOne(inversedBy: 'annonces')]
-    #[Groups(['user:info'])]
+    #[Groups(['annonce:info'])]
     private ?User $user_annonce = null;
 
 

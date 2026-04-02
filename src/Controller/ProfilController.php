@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Repository\AnnonceRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,6 +18,16 @@ final class ProfilController extends AbstractController
         private UserRepository $userRepo,
         private AnnonceRepository $annonceRepo
     ) {}
+
+    private function getAuthenticatedUser(Request $request): ?User
+    {
+        $tokenHeader = $request->headers->get('Authorization');
+        if (!$tokenHeader) return null;
+
+        $token = str_replace('Bearer ', '', $tokenHeader);
+        return $this->userRepo->findOneBy(['token' => $token]);
+    }
+
 
     #[Route('/auth/update', name: 'app_auth_update_profil', methods: ['PUT', 'OPTIONS'])]
     public function updateProfil(Request $request): Response

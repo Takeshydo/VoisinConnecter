@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Entity\Annonce;
 use App\Repository\AnnonceRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,8 +16,18 @@ final class AnnonceController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private AnnonceRepository $annonceRepo
+        private AnnonceRepository $annonceRepo,
+        private UserRepository $userRepo
     ) {}
+
+    private function getAuthenticatedUser(Request $request): ?User
+    {
+        $tokenHeader = $request->headers->get('Authorization');
+        if (!$tokenHeader) return null;
+
+        $token = str_replace('Bearer ', '', $tokenHeader);
+        return $this->userRepo->findOneBy(['token' => $token]);
+    }
 
     #[Route('/annonce/getAll', name: 'app_annonce_all', methods: ['GET', 'OPTIONS'])]
     public function getAnnonceAll(): Response
@@ -31,6 +43,27 @@ final class AnnonceController extends AbstractController
             "message" => "Liste des annonces",
             "result" => $annonces
         ], 200, [], ['groups' => ['annonce:info']]);
+    }
+
+    #[Route('/annonce/user/{id}', name: 'app_annonce_user_3', methods: ['GET', 'OPTIONS'])]
+    public function getAnnonceUser(int $id): Response
+    {
+        $actualUser = $this->userRepo->find($id);
+
+        if(empty($actualUser)){
+            return $this->json(["status" => "error", "message" => "Utilisateur inexistant"]);
+        }
+
+        $annonces = $this->annonceRepo->findBy(["user_annonce" => $actualUser]);
+
+        if (empty($annonces)) {
+            return $this->json(["status" => "error", "message" => "Annonce inexistante"]);
+        }
+
+        return $this->json(["status" => "success",
+                            "message" => "les Annoces de l'utlilisateur",
+                            "result" => $annonces
+                            ], 200, [], ['groups' => ['annonce:info']]);
     }
 
     #[Route('/annonce/category/{category}', name: 'app_annonce_category', methods: ['GET', 'OPTIONS'])]
@@ -83,7 +116,7 @@ final class AnnonceController extends AbstractController
         $annonce->setDescription($data['description']);
         $annonce->setRemuneration($data['remuneration']);
         $annonce->setCategorie($data['categorie']);
-        $annonce->setDateActive((new \DateTime()['dateActive'] ?? $data['date_active'])); //REVOIR Comment Faire ici
+        $annonce->setDateActive(new \DateTime($data['dateActive']));
         $annonce->setCreationDate(new \DateTime());
         $annonce->setUserAnnonce($user);
 
@@ -126,7 +159,7 @@ final class AnnonceController extends AbstractController
         ], 200, [], ['groups' => ['annonce:info']]);
     }
 
-    #[Route('/user/annonce/{id}', name: 'app_auth_delete_annonce', methods: ['DELETE', 'OPTIONS'])]
+    #[Route('/user/annonce/delete/{id}', name: 'app_auth_delete_annonce', methods: ['DELETE', 'OPTIONS'])]
     public function deleteAnnonce(Request $request, int $id): Response
     {
         $user = $this->getAuthenticatedUser($request);
