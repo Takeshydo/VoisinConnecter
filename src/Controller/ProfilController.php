@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Repository\AnnonceRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -18,10 +19,23 @@ final class ProfilController extends AbstractController
         private AnnonceRepository $annonceRepo
     ) {}
 
+    private function getAuthenticatedUser(Request $request): ?User
+    {
+        $tokenHeader = $request->headers->get('Authorization');
+        if (!$tokenHeader) return null;
+
+        $token = str_replace('Bearer ', '', $tokenHeader);
+        return $this->userRepo->findOneBy(['token' => $token]);
+    }
+
+    private function getSalt(): string
+    {
+        return md5($this->getParameter('app.password_salt'));
+    }
+
     #[Route('/user/update', name: 'app_update_profil', methods: ['PUT', 'OPTIONS'])]
     public function updateProfil(Request $request): Response
     {
-
         $user = $this->getAuthenticatedUser($request);
 
         if (!$user) {
@@ -29,15 +43,20 @@ final class ProfilController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
+
         if (!$data) {
             return $this->json(["status" => "error", "message" => "Données invalides."]);
         }
 
-        if (isset($data['nom'])) $user->setNom($data['nom']);
-        if (isset($data['prenom'])) $user->setPrenom($data['prenom']);
-        if (isset($data['photoProfil'])) $user->setPhotoProfil($data['photoProfil']);
-        if (isset($data['email'])) $user->setEmail($data['email']);
-        if (isset($data['password'])) $user->setPassword($data['password']);
+        if (!empty($data['nom'])) $user->setNom($data['nom']);
+        if (!empty($data['prenom'])) $user->setPrenom($data['prenom']);
+        if (!empty($data['photoProfil'])) $user->setPhotoProfil($data['photoProfil']);
+        if (!empty($data['email'])) $user->setEmail($data['email']);
+        if (!empty($data['password'])) {
+            $salt = $this->getSalt();
+            $hashedPassword = md5($data['password'] . $salt);
+            $user->setPassword($hashedPassword);
+        };
 
         $this->em->persist($user);
         $this->em->flush();

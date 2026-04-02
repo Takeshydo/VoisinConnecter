@@ -72,7 +72,7 @@ final class AnnonceController extends AbstractController
         $annonces = $this->annonceRepo->findBy(['categorie' => $category]);
 
         if (empty($annonces)) {
-            return $this->json(["status" => "error", "message" => "Pas d'annonce dans cette categorie"]);
+            return $this->json(["status" => "success", "message" => "Pas d'annonce dans cette categorie", "result" => $annonces]);
         }
 
         return $this->json([
