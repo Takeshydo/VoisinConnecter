@@ -98,7 +98,7 @@ final class AnnonceController extends AbstractController
         ], 200, [], ['groups' => ['annonce:info']]);
     }
 
-    #[Route('/auth/annonce', name: 'app_auth_create_annonce', methods: ['POST', 'OPTIONS'])]
+    #[Route('/create/annonce', name: 'app_create_annonce', methods: ['POST', 'OPTIONS'])]
     public function createAnnonce(Request $request): Response
     {
         $user = $this->getAuthenticatedUser($request);
