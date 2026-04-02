@@ -21,6 +21,7 @@ final class ProfilController extends AbstractController
     #[Route('/profil/update', name: 'app_update_profil', methods: ['PUT', 'OPTIONS'])]
     public function updateProfil(Request $request): Response
     {
+
         $user = $this->getAuthenticatedUser($request);
 
         if (!$user) {
