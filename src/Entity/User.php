@@ -47,7 +47,6 @@ class User
     private ?string $prenom = null;
 
     #[ORM\OneToMany(targetEntity: Annonce::class, mappedBy: 'user_annonce')]
-    #[Groups(['user:info'])]
     private Collection $annonces;
 
     #[ORM\Column]
