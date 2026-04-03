@@ -15,9 +15,11 @@ final class ProfilController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private UserRepository $userRepo,
-        private AnnonceRepository $annonceRepo
-    ) {}
+        private UserRepository         $userRepo,
+        private AnnonceRepository      $annonceRepo
+    )
+    {
+    }
 
     private function getAuthenticatedUser(Request $request): ?User
     {
@@ -107,6 +109,28 @@ final class ProfilController extends AbstractController
         ]);
     }
 
+    #[Route('/all/users', name: 'app_all_users', methods: ['GET', 'OPTIONS'])]
+    public function getAllUsers(): Response
+    {
+        $users = $this->userRepo->findAll();
+
+        $data = [];
+        foreach ($users as $user) {
+            $data[] = [
+                "id" => $user->getId(),
+                "Nom" => $user->getNom(),
+                "prenom" => $user->getPrenom(),
+                "email" => $user->getEmail(),
+            ];
+        }
+
+        return $this->json([
+            "status" => "ok",
+            "result" => $data
+        ]);
+    }
+
+
     #[Route('/admin/update', name: 'app_admin_update_profil', methods: ['PUT', 'OPTIONS'])]
     public function updateAdminProfil(Request $request): Response
     {
@@ -139,40 +163,61 @@ final class ProfilController extends AbstractController
     }
 
     #[Route('/admin/user/{id}', name: 'app_admin_delete_user', methods: ['DELETE', 'OPTIONS'])]
-    public function deleteUser(Request $request, int $id): Response
+   public function deleteUser(int $id): Response
     {
-        $admin = $this->getAuthenticatedAdmin($request);
-        if (!$admin) {
-            return $this->json(["status" => "error", "message" => "Accès non autorisé."]);
+        $userDelete = $this->userRepo->find($id);
+        if (!$userDelete) {
+            return $this->json(["status" => "error", "message" => "Utilisateur introuvable."], 404);
         }
 
-        $userToDelete = $this->userRepo->find($id);
-        if (!$userToDelete) {
-            return $this->json(["status" => "error", "message" => "Utilisateur introuvable."]);
+        try {
+            $this->em->remove($userDelete);
+            $this->em->flush();
+
+            return $this->json([
+                "status" => "ok",
+                "message" => "L'utilisateur #{id} a été suprimé avec succès"
+            ]);
+        } catch (\Exception $e) {
+            return $this->json(["status" => "error", "message" => $e->getMessage()], 500);
         }
-
-        $this->em->remove($userToDelete);
-        $this->em->flush();
-
-        return $this->json(["status" => "ok", "message" => "Utilisateur supprimé."]);
     }
 
-    #[Route('/admin/users', name: 'app_admin_get_users', methods: ['GET', 'OPTIONS'])]
-    public function getAllUsers(Request $request): Response
-    {
-        // On vérifie que c'est bien un admin
-        $admin = $this->getAuthenticatedAdmin($request);
-        if (!$admin) {
-            return $this->json(["status" => "error", "message" => "Accès non autorisé."]);
-        }
+//    #[Route('/admin/user/{id}', name: 'app_admin_delete_user', methods: ['DELETE', 'OPTIONS'])]
+//    public function deleteUser(Request $request, int $id): Response
+//    {
+//        $admin = $this->getAuthenticatedAdmin($request);
+//        if (!$admin) {
+//            return $this->json(["status" => "error", "message" => "Accès non autorisé."]);
+//        }
+//
+//        $userToDelete = $this->userRepo->find($id);
+//        if (!$userToDelete) {
+//            return $this->json(["status" => "error", "message" => "Utilisateur introuvable."]);
+//        }
+//
+//        $this->em->remove($userToDelete);
+//        $this->em->flush();
+//
+//        return $this->json(["status" => "ok", "message" => "Utilisateur supprimé."]);
+//    }
 
-        $users = $this->userRepo->findAll();
-
-        return $this->json([
-            "status" => "success",
-            "message" => "Liste des utilisateurs récupérée.",
-            "result" => $users
-        ], 200, [], ['groups' => ['user:info']]);
-    }
+//    #[Route('/admin/users', name: 'app_admin_get_users', methods: ['GET', 'OPTIONS'])]
+//    public function getAllUsers(Request $request): Response
+//    {
+//        // On vérifie que c'est bien un admin
+//        $admin = $this->getAuthenticatedAdmin($request);
+//        if (!$admin) {
+//            return $this->json(["status" => "error", "message" => "Accès non autorisé."]);
+//        }
+//
+//        $users = $this->userRepo->findAll();
+//
+//        return $this->json([
+//            "status" => "success",
+//            "message" => "Liste des utilisateurs récupérée.",
+//            "result" => $users
+//        ], 200, [], ['groups' => ['user:info']]);
+//    }
 
 }
